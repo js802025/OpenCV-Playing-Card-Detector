@@ -77,8 +77,8 @@ def load_ranks(filepath):
     train_ranks = []
     i = 0
     
-    for Rank in ['Ace','Two','Three','Four','Five','Six','Seven',
-                 'Eight','Nine','Ten','Jack','Queen','King']:
+    for Rank in ['Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 
+                 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']:
         train_ranks.append(Train_ranks())
         train_ranks[i].name = Rank
         filename = Rank + '.jpg'
@@ -94,7 +94,7 @@ def load_suits(filepath):
     train_suits = []
     i = 0
     
-    for Suit in ['Spades','Diamonds','Clubs','Hearts']:
+    for Suit in ['Spades', 'Diamonds', 'Clubs', 'Hearts']:
         train_suits.append(Train_suits())
         train_suits[i].name = Suit
         filename = Suit + '.jpg'
@@ -106,8 +106,8 @@ def load_suits(filepath):
 def preprocess_image(image):
     """Returns a grayed, blurred, and adaptively thresholded camera image."""
 
-    gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray,(5,5),0)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # The best threshold level depends on the ambient lighting conditions.
     # For bright lighting, a high threshold must be used to isolate the cards
@@ -122,7 +122,7 @@ def preprocess_image(image):
     bkg_level = gray[int(img_h/100)][int(img_w/2)]
     thresh_level = bkg_level + BKG_THRESH
 
-    retval, thresh = cv2.threshold(blur,thresh_level,255,cv2.THRESH_BINARY)
+    retval, thresh = cv2.threshold(blur, thresh_level, 255, cv2.THRESH_BINARY)
     
     return thresh
 
@@ -132,8 +132,8 @@ def find_cards(thresh_image):
     from largest to smallest."""
 
     # Find contours and sort their indices by contour size
-    dummy,cnts,hier = cv2.findContours(thresh_image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    index_sort = sorted(range(len(cnts)), key=lambda i : cv2.contourArea(cnts[i]),reverse=True)
+    cnts, hier = cv2.findContours(thresh_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    index_sort = sorted(range(len(cnts)), key=lambda i : cv2.contourArea(cnts[i]), reverse=True)
 
     # If there are no contours, do nothing
     if len(cnts) == 0:
@@ -142,9 +142,9 @@ def find_cards(thresh_image):
     # Otherwise, initialize empty sorted contour and hierarchy lists
     cnts_sort = []
     hier_sort = []
-    cnt_is_card = np.zeros(len(cnts),dtype=int)
+    cnt_is_card = np.zeros(len(cnts), dtype=int)
 
-    # Fill empty lists with sorted contour and sorted hierarchy. Now,
+    # Fill empty lists with sorted contour and sorted hierarchy. Now, 
     # the indices of the contour list still correspond with those of
     # the hierarchy list. The hierarchy array can be used to check if
     # the contours have parents or not.
@@ -153,14 +153,14 @@ def find_cards(thresh_image):
         hier_sort.append(hier[0][i])
 
     # Determine which of the contours are cards by applying the
-    # following criteria: 1) Smaller area than the maximum card size,
-    # 2), bigger area than the minimum card size, 3) have no parents,
+    # following criteria: 1) Smaller area than the maximum card size, 
+    # 2), bigger area than the minimum card size, 3) have no parents, 
     # and 4) have four corners
 
     for i in range(len(cnts_sort)):
         size = cv2.contourArea(cnts_sort[i])
-        peri = cv2.arcLength(cnts_sort[i],True)
-        approx = cv2.approxPolyDP(cnts_sort[i],0.01*peri,True)
+        peri = cv2.arcLength(cnts_sort[i], True)
+        approx = cv2.approxPolyDP(cnts_sort[i], 0.01*peri, True)
         
         if ((size < CARD_MAX_AREA) and (size > CARD_MIN_AREA)
             and (hier_sort[i][3] == -1) and (len(approx) == 4)):
@@ -178,13 +178,13 @@ def preprocess_card(contour, image):
     qCard.contour = contour
 
     # Find perimeter of card and use it to approximate corner points
-    peri = cv2.arcLength(contour,True)
-    approx = cv2.approxPolyDP(contour,0.01*peri,True)
+    peri = cv2.arcLength(contour, True)
+    approx = cv2.approxPolyDP(contour, 0.01*peri, True)
     pts = np.float32(approx)
     qCard.corner_pts = pts
 
     # Find width and height of card's bounding rectangle
-    x,y,w,h = cv2.boundingRect(contour)
+    x, y, w, h = cv2.boundingRect(contour)
     qCard.width, qCard.height = w, h
 
     # Find center point of card by taking x and y average of the four corners.
@@ -198,10 +198,10 @@ def preprocess_card(contour, image):
 
     # Grab corner of warped card image and do a 4x zoom
     Qcorner = qCard.warp[0:CORNER_HEIGHT, 0:CORNER_WIDTH]
-    Qcorner_zoom = cv2.resize(Qcorner, (0,0), fx=4, fy=4)
+    Qcorner_zoom = cv2.resize(Qcorner, (0, 0), fx=4, fy=4)
 
     # Sample known white pixel intensity to determine good threshold level
-    white_level = Qcorner_zoom[15,int((CORNER_WIDTH*4)/2)]
+    white_level = Qcorner_zoom[15, int((CORNER_WIDTH*4)/2)]
     thresh_level = white_level - CARD_THRESH
     if (thresh_level <= 0):
         thresh_level = 1
@@ -212,25 +212,25 @@ def preprocess_card(contour, image):
     Qsuit = query_thresh[186:336, 0:128]
 
     # Find rank contour and bounding rectangle, isolate and find largest contour
-    dummy, Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    Qrank_cnts = sorted(Qrank_cnts, key=cv2.contourArea,reverse=True)
+    Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    Qrank_cnts = sorted(Qrank_cnts, key=cv2.contourArea, reverse=True)
 
     # Find bounding rectangle for largest contour, use it to resize query rank
     # image to match dimensions of the train rank image
     if len(Qrank_cnts) != 0:
-        x1,y1,w1,h1 = cv2.boundingRect(Qrank_cnts[0])
+        x1, y1, w1, h1 = cv2.boundingRect(Qrank_cnts[0])
         Qrank_roi = Qrank[y1:y1+h1, x1:x1+w1]
-        Qrank_sized = cv2.resize(Qrank_roi, (RANK_WIDTH,RANK_HEIGHT), 0, 0)
+        Qrank_sized = cv2.resize(Qrank_roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0)
         qCard.rank_img = Qrank_sized
 
     # Find suit contour and bounding rectangle, isolate and find largest contour
-    dummy, Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    Qsuit_cnts = sorted(Qsuit_cnts, key=cv2.contourArea,reverse=True)
+    Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    Qsuit_cnts = sorted(Qsuit_cnts, key=cv2.contourArea, reverse=True)
     
     # Find bounding rectangle for largest contour, use it to resize query suit
     # image to match dimensions of the train suit image
     if len(Qsuit_cnts) != 0:
-        x2,y2,w2,h2 = cv2.boundingRect(Qsuit_cnts[0])
+        x2, y2, w2, h2 = cv2.boundingRect(Qsuit_cnts[0])
         Qsuit_roi = Qsuit[y2:y2+h2, x2:x2+w2]
         Qsuit_sized = cv2.resize(Qsuit_roi, (SUIT_WIDTH, SUIT_HEIGHT), 0, 0)
         qCard.suit_img = Qsuit_sized
@@ -248,12 +248,12 @@ def match_card(qCard, train_ranks, train_suits):
     best_suit_match_name = "Unknown"
     i = 0
 
-    # If no contours were found in query card in preprocess_card function,
+    # If no contours were found in query card in preprocess_card function, 
     # the img size is zero, so skip the differencing process
     # (card will be left as Unknown)
     if (len(qCard.rank_img) != 0) and (len(qCard.suit_img) != 0):
         
-        # Difference the query card rank image from each of the train rank images,
+        # Difference the query card rank image from each of the train rank images, 
         # and store the result with the least difference
         for Trank in train_ranks:
 
@@ -294,24 +294,24 @@ def draw_results(image, qCard):
 
     x = qCard.center[0]
     y = qCard.center[1]
-    cv2.circle(image,(x,y),5,(255,0,0),-1)
+    cv2.circle(image, (x, y), 5, (255, 0, 0), -1)
 
     rank_name = qCard.best_rank_match
     suit_name = qCard.best_suit_match
 
     # Draw card name twice, so letters have black outline
-    cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(0,0,0),3,cv2.LINE_AA)
-    cv2.putText(image,(rank_name+' of'),(x-60,y-10),font,1,(50,200,200),2,cv2.LINE_AA)
+    cv2.putText(image, (rank_name+' of'), (x-60, y-10), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(image, (rank_name+' of'), (x-60, y-10), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
 
-    cv2.putText(image,suit_name,(x-60,y+25),font,1,(0,0,0),3,cv2.LINE_AA)
-    cv2.putText(image,suit_name,(x-60,y+25),font,1,(50,200,200),2,cv2.LINE_AA)
+    cv2.putText(image, suit_name, (x-60, y+25), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(image, suit_name, (x-60, y+25), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
     
     # Can draw difference value for troubleshooting purposes
     # (commented out during normal operation)
     #r_diff = str(qCard.rank_diff)
     #s_diff = str(qCard.suit_diff)
-    #cv2.putText(image,r_diff,(x+20,y+30),font,0.5,(0,0,255),1,cv2.LINE_AA)
-    #cv2.putText(image,s_diff,(x+20,y+50),font,0.5,(0,0,255),1,cv2.LINE_AA)
+    #cv2.putText(image, r_diff, (x+20, y+30), font, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+    #cv2.putText(image, s_diff, (x+20, y+50), font, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
 
     return image
 
@@ -319,7 +319,7 @@ def flattener(image, pts, w, h):
     """Flattens an image of a card into a top-down 200x300 perspective.
     Returns the flattened, re-sized, grayed image.
     See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/"""
-    temp_rect = np.zeros((4,2), dtype = "float32")
+    temp_rect = np.zeros((4, 2), dtype = "float32")
     
     s = np.sum(pts, axis = 2)
 
@@ -351,7 +351,7 @@ def flattener(image, pts, w, h):
     # bottom left, and bottom right.
     
     if w > 0.8*h and w < 1.2*h: #If card is diamond oriented
-        # If furthest left point is higher than furthest right point,
+        # If furthest left point is higher than furthest right point, 
         # card is tilted to the left.
         if pts[1][0][1] <= pts[3][0][1]:
             # If card is titled to the left, approxPolyDP returns points
@@ -361,7 +361,7 @@ def flattener(image, pts, w, h):
             temp_rect[2] = pts[3][0] # Bottom right
             temp_rect[3] = pts[2][0] # Bottom left
 
-        # If furthest left point is lower than furthest right point,
+        # If furthest left point is lower than furthest right point, 
         # card is tilted to the right
         if pts[1][0][1] > pts[3][0][1]:
             # If card is titled to the right, approxPolyDP returns points
@@ -375,12 +375,12 @@ def flattener(image, pts, w, h):
     maxWidth = 200
     maxHeight = 300
 
-    # Create destination array, calculate perspective transform matrix,
+    # Create destination array, calculate perspective transform matrix, 
     # and warp card image
-    dst = np.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], np.float32)
-    M = cv2.getPerspectiveTransform(temp_rect,dst)
+    dst = np.array([[0, 0], [maxWidth-1, 0], [maxWidth-1, maxHeight-1], [0, maxHeight-1]], np.float32)
+    M = cv2.getPerspectiveTransform(temp_rect, dst)
     warp = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-    warp = cv2.cvtColor(warp,cv2.COLOR_BGR2GRAY)
+    warp = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
 
         
 
